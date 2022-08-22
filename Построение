@@ -1,0 +1,111 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <random>
+#include <vector>
+
+std::mt19937 gen;
+
+struct Node {
+    int64_t x;
+    int64_t y;
+    size_t size = 1;
+    Node* left = nullptr;
+    Node* right = nullptr;
+
+    Node(int64_t x) : x(x) {
+        y = gen();
+    }
+};
+
+size_t Get_size(Node* n) {
+    return n ? n->size : 0;
+}
+
+void Upd(Node* n) {
+    n->size = 1 + Get_size(n->left) + Get_size(n->right);
+}
+
+std::pair<Node*, Node*> Split(Node* root, int64_t k) {
+    if (!root) {
+        return {0, 0};
+    }
+    if (root->x < k) {
+        std::pair<Node*, Node*> q = Split(root->right, k);
+        root->right = q.first;
+        Upd(root);
+        return { root, q.second };
+    } else {
+        std::pair<Node*, Node*> q = Split(root->left, k);
+        root->left = q.second;
+        Upd(root);
+        return { q.first, root };
+    }
+}
+
+std::pair<Node*, Node*> SplitNum(Node* root, int k) {
+    if (!root) {
+        return {0, 0};
+    }
+    if (Get_size(root->left) < k) {
+        std::pair<Node*, Node*> q = SplitNum(root->right, k - Get_size(root->left) - 1);
+        root->right = q.first;
+        Upd(root);
+        return { root, q.second };
+    } else {
+        std::pair<Node*, Node*> q = SplitNum(root->left, k);
+        root->left = q.second;
+        Upd(root);
+        return { q.first, root };
+    }
+}
+
+Node* Merge(Node* left, Node* right) {
+    if (!left) {
+        return right;
+    }
+    if (!right) {
+        return left;
+    }
+    if (left->y > right->y) {
+        left->right = Merge(left->right, right);
+        Upd(left);
+        return left;
+    } else {
+        right->left = Merge(left, right->left);
+        Upd(right);
+        return right;
+    }
+}
+
+void Insert(Node*& root, int value) {
+    std::pair<Node*, Node*> tmp = Split(root, value);
+    std::cout << Get_size(tmp.second) << std::endl;
+    root = Merge(tmp.first, Merge(new Node(value), tmp.second));
+}
+
+void Erase(Node*& root, int value) {
+    int pos = Get_size(root) - value;
+    std::pair<Node*, Node*> tmp1 = SplitNum(root, pos);
+    std::pair<Node*, Node*> tmp2 = SplitNum(tmp1.first, pos - 1);
+    delete tmp2.second;
+    root = Merge(tmp2.first, tmp1.second);
+}
+
+int main() {
+    Node* root = nullptr;
+    int n = 0;
+    std::cin >> n;
+    for (size_t i = 1; i <= n; ++i) {
+        int command = 0;
+        int x = 0;
+        std::cin >> command >> x;
+        if (command == 1) {
+            Insert(root, x);
+        } else {
+            Erase(root, x);
+        }
+    }
+
+    return 0;
+}
