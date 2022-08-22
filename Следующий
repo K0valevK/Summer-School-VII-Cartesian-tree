@@ -1,0 +1,117 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <random>
+#include <vector>
+
+std::mt19937 gen;
+
+struct Node {
+    int x;
+    int y;
+    int mn;
+    Node* left = nullptr;
+    Node* right = nullptr;
+
+    Node(int x) : x(x), mn(x) {
+        y = gen();
+    }
+};
+
+int Get_min(Node* n) {
+    return n ? n->mn : 1000000001;
+}
+
+void Upd_min(Node* n) {
+    n->mn = std::min(n->x, std::min(Get_min(n->left), Get_min(n->right)));
+}
+
+std::pair<Node*, Node*> Split(Node* root, int k) {
+    if (!root) {
+        return {0, 0};
+    }
+    if (root->x < k) {
+        std::pair<Node*, Node*> q = Split(root->right, k);
+        root->right = q.first;
+        Upd_min(root);
+        return { root, q.second };
+    } else {
+        std::pair<Node*, Node*> q = Split(root->left, k);
+        root->left = q.second;
+        Upd_min(root);
+        return { q.first, root };
+    }
+}
+
+Node* Merge(Node* left, Node* right) {
+    if (!left) {
+        return right;
+    }
+    if (!right) {
+        return left;
+    }
+    if (left->y > right->y) {
+        left->right = Merge(left->right, right);
+        Upd_min(left);
+        return left;
+    } else {
+        right->left = Merge(left, right->left);
+        Upd_min(right);
+        return right;
+    }
+}
+
+bool Find(Node*& root, int value) {
+    if (!root) {
+        return false;
+    }
+    if (root->x == value) {
+        return true;
+    }
+    if (value < root->x) {
+        return Find(root->left, value);
+    } else {
+        return Find(root->right, value);
+    }
+}
+
+void Insert(Node*& root, int value) {
+    if (Find(root, value)) {
+        return;
+    }
+    std::pair<Node*, Node*> tmp = Split(root, value);
+    root = Merge(tmp.first, Merge(new Node(value), tmp.second));
+}
+
+int Next(Node*& root, int value) {
+    std::pair<Node*, Node*> tmp = Split(root, value);
+    int mn = Get_min(tmp.second);
+    root = Merge(tmp.first, tmp.second);
+    return mn;
+}
+
+int main() {
+    Node* root = nullptr;
+    int n = 0;
+    std::cin >> n;
+    int last = 0;
+    for (int i = 1; i <= n; ++i) {
+        int tmp = 0;
+        char command;
+        std::cin >> command >> tmp;
+        if (command == '+') {
+            Insert(root, (tmp + last) % 1000000000);
+            last = 0;
+        } else {
+            last = Next(root, tmp);
+            if (last == 1000000001) {
+                std::cout << -1 << std::endl;
+                last = 0;
+            } else {
+                std::cout << last << std::endl;
+            }
+        }
+    }
+
+    return 0;
+}
