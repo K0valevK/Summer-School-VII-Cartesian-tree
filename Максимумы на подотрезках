@@ -1,0 +1,104 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <random>
+#include <vector>
+
+std::mt19937 gen;
+
+struct Node {
+    int64_t x;
+    int64_t y;
+    size_t size = 1;
+    int64_t mx;
+    Node* left = nullptr;
+    Node* right = nullptr;
+
+    Node(int64_t x) : x(x), mx(x) {
+        y = gen();
+    }
+};
+
+size_t Get_size(Node* n) {
+    return n ? n->size : 0;
+}
+
+void Upd(Node* n) {
+    n->size = 1 + Get_size(n->left) + Get_size(n->right);
+}
+
+int64_t Get_max(Node* n) {
+    return n ? n->mx : 0;
+}
+
+void Upd_max(Node* n) {
+    n->mx = std::max(n->x, std::max(Get_max(n->left), Get_max(n->right)));
+}
+
+std::pair<Node*, Node*> Split(Node* root, int64_t k) {
+    if (!root) {
+        return {0, 0};
+    }
+    if (Get_size(root->left) < k) {
+        std::pair<Node*, Node*> q = Split(root->right, k - Get_size(root->left) - 1);
+        root->right = q.first;
+        Upd(root);
+        Upd_max(root);
+        return { root, q.second };
+    } else {
+        std::pair<Node*, Node*> q = Split(root->left, k);
+        root->left = q.second;
+        Upd(root);
+        Upd_max(root);
+        return { q.first, root };
+    }
+}
+
+Node* Merge(Node* left, Node* right) {
+    if (!left) {
+        return right;
+    }
+    if (!right) {
+        return left;
+    }
+    if (left->y > right->y) {
+        left->right = Merge(left->right, right);
+        Upd(left);
+        Upd_max(left);
+        return left;
+    } else {
+        right->left = Merge(left, right->left);
+        Upd(right);
+        Upd_max(right);
+        return right;
+    }
+}
+
+int64_t Max(Node*& root, int left, int right) {
+    std::pair<Node*, Node*> tmp1 = Split(root, right);
+    std::pair<Node*, Node*> tmp2 = Split(tmp1.first, left - 1);
+    int64_t mx = Get_max(tmp2.second);
+    root = Merge(tmp2.first, Merge(tmp2.second, tmp1.second));
+    return mx;
+}
+
+int main() {
+    Node* root = nullptr;
+    int n = 0;
+    std::cin >> n;
+    for (size_t i = 1; i <= n; ++i) {
+        int x = 0;
+        std::cin >> x;
+        root = Merge(root, new Node(x));
+    }
+    int k = 0;
+    std::cin >> k;
+    for (size_t i = 0; i < k; ++i) {
+        int left = 0;
+        int right = 0;
+        std::cin >> left >> right;
+        std::cout << Max(root, left, right) << ' ';
+    }
+
+    return 0;
+}
