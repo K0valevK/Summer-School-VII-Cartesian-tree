@@ -1,0 +1,82 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <random>
+#include <vector>
+
+std::mt19937 gen;
+
+struct Node {
+    int num;
+    int x;
+    int y;
+    Node* parent = nullptr;
+    Node* left = nullptr;
+    Node* right = nullptr;
+
+    Node(int num, int x, int y) : num(num), x(x), y(y) {
+    }
+};
+
+void Build(Node*& root, std::vector<Node*>& verges) {
+    root = verges[0];
+    Node* last = root;
+    for (size_t i = 1; i < verges.size(); ++i) {
+        if (last->y < verges[i]->y) {
+            last->right = verges[i];
+            last->right->parent = last;
+            last = last->right;
+        } else {
+            Node* cur = last;
+            while (cur->parent != nullptr && cur->y > verges[i]->y)
+                cur = cur->parent;
+            if (cur->y > verges[i]->y) {
+                last = verges[i];
+                last->left = cur;
+                cur->parent = last;
+            } else {
+                last = verges[i];
+                last->left = cur->right;
+                cur->right->parent = last;
+                last->parent = cur;
+                cur->right = last;
+            }
+        }
+    }
+
+    while (last->parent != nullptr)
+        last = last->parent;
+    root = last;
+}
+
+int Get_num(Node*& root) {
+    return !root ? 0 : root->num;
+}
+
+bool cmp(Node*& lhv, Node*& rhv) {
+    return lhv->x < rhv->x;
+}
+
+int main() {
+    Node* root = nullptr;
+    int n = 0;
+    std::cin >> n;
+    std::vector<Node*> order(n, nullptr);
+    std::vector<Node*> verges(n, nullptr);
+    for (int i = 0; i < n; ++i) {
+        int x = 0;
+        int y = 0;
+        std::cin >> x >> y;
+        order[i] = new Node(i + 1, x, y);
+        verges[i] = order[i];
+    }
+    std::sort(verges.begin(), verges.end(), cmp);
+    Build(root, verges);
+    std::cout << "YES" << std::endl;
+    for (size_t i = 0; i < order.size(); ++i) {
+        std::cout << Get_num(order[i]->parent) << ' ' << Get_num(order[i]->left)
+                  << ' ' << Get_num(order[i]->right) << std::endl;
+    }
+
+    return 0;
+}
