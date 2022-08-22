@@ -78,7 +78,7 @@ void Print(Node* root) {
 }
 
 int main() {
-    Node* root = 0;
+    Node* root = nullptr;
     int n = 0;
     int m = 0;
     std::cin >> n >> m;
